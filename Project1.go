@@ -9,7 +9,12 @@ import (
 )
 
 func main() {
-	Comic, err := getComic(614) //calls get comic ; gets comic JSON
+	x := 0
+
+	fmt.Println("Enter the comic number you want")
+	fmt.Scan(&x)
+
+	Comic, err := getComic(x) //calls get comic ; gets comic JSON
 	if err != nil {
 		fmt.Println("Error fetching comic:", err)
 		return
