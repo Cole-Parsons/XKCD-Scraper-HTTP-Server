@@ -9,19 +9,25 @@ import (
 )
 
 func main() {
-	Comic, err := getComic(614) //calls get comic
+	Comic, err := getComic(614) //calls get comic ; gets comic JSON
 	if err != nil {
-		fmt.Println("Error:", err)
+		fmt.Println("Error fetching comic:", err)
 		return
 	}
 
+	//prints all info about the comic
 	fmt.Println("Comic #: ", Comic.Num)
 	fmt.Println("Comic Title: ", Comic.Title)
 	fmt.Println("Comic url: ", Comic.Img)
 	fmt.Println("Alt text: ", Comic.Alt)
 
-	err = downloadImage(Comic.Img, fmt.Sprintf("%d-%s.png", Comic.Num, Comic.Title))
+	//dynamically creates file name for individual comic
+	filename := fmt.Sprintf("%d-%s.png", Comic.Num, Comic.Title)
 
+	//downloads comic to disk using dynamic file name
+	err = downloadImage(Comic.Img, filename)
+
+	//confirms if image saved correctly
 	if err != nil {
 		fmt.Println("Error downloading Comic: ", err)
 		return
@@ -32,7 +38,7 @@ func main() {
 
 // collection of related data grouped together
 type Comic struct {
-	Num   int    `json:"num`
+	Num   int    `json:"num"`
 	Title string `json:"title"`
 	Img   string `json:"img"` //img url
 	Alt   string `json:"alt"`
@@ -52,6 +58,10 @@ func getComic(num int) (*Comic, error) {
 	var comic Comic //declaring variable to store parsed JSON data
 
 	err = json.NewDecoder(resp.Body).Decode(&comic) //reads JSON data from http, fills comic struct with that data, directly updating it through pointer
+	if err != nil {
+		return nil, err
+	}
+	return &comic, nil
 } //end get Comic
 
 func downloadImage(url, filename string) error {
@@ -59,8 +69,8 @@ func downloadImage(url, filename string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()                   //closes http connection to prevent memory leak
-	file, err := os.Create("ScraperTest.png") //creates new file
+	defer resp.Body.Close()          //closes http connection to prevent memory leak
+	file, err := os.Create(filename) //creates new file
 	if err != nil {
 		return err
 	}
