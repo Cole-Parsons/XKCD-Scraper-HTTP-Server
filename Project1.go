@@ -6,6 +6,7 @@ import (
 	"io"            // reading and writing streams of data
 	"net/http"      //make http requests
 	"os"            //to interact with file system
+	"strings"       //for string manipulation
 )
 
 func main() {
@@ -20,6 +21,15 @@ func main() {
 	fmt.Scan(&y)
 	fmt.Println()
 
+	folder := "comics"
+
+	err := os.MkdirAll(folder, os.ModePerm) //creates new folder for comics
+
+	if err != nil {
+		fmt.Println("Error creating folder.")
+		return
+	}
+
 	for i := x; i <= y; i++ {
 		Comic, err := getComic(i) //calls get comic ; gets comic JSON
 		if err != nil {
@@ -33,8 +43,10 @@ func main() {
 		fmt.Println("Comic url: ", Comic.Img)
 		fmt.Println("Alt text: ", Comic.Alt)
 
+		safeTitle := strings.ReplaceAll(Comic.Title, " ", "_")
+
 		//dynamically creates file name for individual comic
-		filename := fmt.Sprintf("%d-%s.png", Comic.Num, Comic.Title)
+		filename := fmt.Sprintf("%s/%d-%s.png", folder, Comic.Num, safeTitle)
 
 		//downloads comic to disk using dynamic file name
 		err = downloadImage(Comic.Img, filename)
@@ -44,7 +56,7 @@ func main() {
 			fmt.Println("Error downloading Comic: ", err)
 			return
 		}
-		fmt.Println("Comic saved Successfully")
+		fmt.Println("Comic saved Successfully: ", filename)
 	}
 }
 
