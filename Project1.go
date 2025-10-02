@@ -49,7 +49,7 @@ func main() {
 		filename := fmt.Sprintf("%s/%d-%s.png", folder, Comic.Num, safeTitle)
 
 		//checks if file already exists
-		if _, err := os.Stat(filename); err == nil{
+		if _, err := os.Stat(filename); err == nil {
 			fmt.Println("File already exists, skipping: ", filename)
 			continue
 		}
