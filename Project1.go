@@ -48,6 +48,12 @@ func main() {
 		//dynamically creates file name for individual comic
 		filename := fmt.Sprintf("%s/%d-%s.png", folder, Comic.Num, safeTitle)
 
+		//checks if file already exists
+		if _, err := os.Stat(filename); err == nil{
+			fmt.Println("File already exists, skipping: ", filename)
+			continue
+		}
+
 		//downloads comic to disk using dynamic file name
 		err = downloadImage(Comic.Img, filename)
 
