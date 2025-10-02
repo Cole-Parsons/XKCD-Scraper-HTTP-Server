@@ -9,36 +9,43 @@ import (
 )
 
 func main() {
-	x := 0
+	x := 0 //first comic
+	y := 0 //last comic
 
-	fmt.Println("Enter the comic number you want")
+	fmt.Println("Enter the range of comics you want. Ex. comic 10 to 25 inclusive")
+	fmt.Print("First Comic you want: ")
 	fmt.Scan(&x)
+	fmt.Println()
+	fmt.Print("Enter the last comic you want: ")
+	fmt.Scan(&y)
+	fmt.Println()
 
-	Comic, err := getComic(x) //calls get comic ; gets comic JSON
-	if err != nil {
-		fmt.Println("Error fetching comic:", err)
-		return
+	for i := x; i <= y; i++ {
+		Comic, err := getComic(i) //calls get comic ; gets comic JSON
+		if err != nil {
+			fmt.Println("Error fetching comic:", err)
+			return
+		}
+
+		//prints all info about the comic
+		fmt.Println("Comic #: ", Comic.Num)
+		fmt.Println("Comic Title: ", Comic.Title)
+		fmt.Println("Comic url: ", Comic.Img)
+		fmt.Println("Alt text: ", Comic.Alt)
+
+		//dynamically creates file name for individual comic
+		filename := fmt.Sprintf("%d-%s.png", Comic.Num, Comic.Title)
+
+		//downloads comic to disk using dynamic file name
+		err = downloadImage(Comic.Img, filename)
+
+		//confirms if image saved correctly
+		if err != nil {
+			fmt.Println("Error downloading Comic: ", err)
+			return
+		}
+		fmt.Println("Comic saved Successfully")
 	}
-
-	//prints all info about the comic
-	fmt.Println("Comic #: ", Comic.Num)
-	fmt.Println("Comic Title: ", Comic.Title)
-	fmt.Println("Comic url: ", Comic.Img)
-	fmt.Println("Alt text: ", Comic.Alt)
-
-	//dynamically creates file name for individual comic
-	filename := fmt.Sprintf("%d-%s.png", Comic.Num, Comic.Title)
-
-	//downloads comic to disk using dynamic file name
-	err = downloadImage(Comic.Img, filename)
-
-	//confirms if image saved correctly
-	if err != nil {
-		fmt.Println("Error downloading Comic: ", err)
-		return
-	}
-	fmt.Println("Comic saved Successfully")
-
 }
 
 // collection of related data grouped together
