@@ -40,15 +40,8 @@ func main() {
 		// fmt.Println("Comic url: ", Comic.Img)
 		// fmt.Println("Alt text: ", Comic.Alt)
 
-		safeTitle := strings.ReplaceAll(Comic.Title, " ", "_")
-
-		invalidChars := []string{"/", "\\", ":", "*", "?", "\"", "<", ">", "|"}
-		//looping through the safeTitle and removing all illegal characters for file names
-		for _, c := range invalidChars {
-			safeTitle = strings.ReplaceAll(safeTitle, c, "")
-		}
-
 		//dynamically creates file name for individual comic
+		safeTitle := sanitizeTitle(Comic.Title)
 		filename := fmt.Sprintf("%s/%d-%s.png", folder, Comic.Num, safeTitle)
 
 		//checks if file already exists
@@ -134,4 +127,13 @@ func getLastComicNum() (int, error) {
 	}
 
 	return latest.Num, nil //send comic number back
+}
+
+func sanitizeTitle(title string) string {
+	safeTitle := strings.ReplaceAll(title, " ", "_")
+	invalidChars := []string{"/", "\\", ":", "*", "?", "\"", "<", ">", "|"}
+	for _, c := range invalidChars {
+		safeTitle = strings.ReplaceAll(safeTitle, c, "")
+	}
+	return safeTitle
 }
