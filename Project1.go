@@ -10,40 +10,43 @@ import (
 )
 
 func main() {
-	x := 0 //first comic
-	y := 0 //last comic
-
-	fmt.Println("Enter the range of comics you want. Ex. comic 10 to 25 inclusive")
-	fmt.Print("First Comic you want: ")
-	fmt.Scan(&x)
-	fmt.Println()
-	fmt.Print("Enter the last comic you want: ")
-	fmt.Scan(&y)
-	fmt.Println()
 
 	folder := "comics"
+	fmt.Println("Downloading all comic .pngs up to the most recent")
 
 	err := os.MkdirAll(folder, os.ModePerm) //creates new folder for comics
-
 	if err != nil {
-		fmt.Println("Error creating folder.")
+		fmt.Println("Error making folder")
 		return
 	}
 
-	for i := x; i <= y; i++ {
+	lastNum, err := getLastComicNum()
+	if err != nil {
+		fmt.Println("Error getting latest comic")
+		return
+	}
+
+	for i := 1; i <= lastNum; i++ {
+
 		Comic, err := getComic(i) //calls get comic ; gets comic JSON
 		if err != nil {
-			fmt.Println("Error fetching comic:", err)
-			return
+			fmt.Println("Skipping comic ", i, ":", err)
+			continue
 		}
 
 		//prints all info about the comic
-		fmt.Println("Comic #: ", Comic.Num)
-		fmt.Println("Comic Title: ", Comic.Title)
-		fmt.Println("Comic url: ", Comic.Img)
-		fmt.Println("Alt text: ", Comic.Alt)
+		// fmt.Println("Comic #: ", Comic.Num)
+		// fmt.Println("Comic Title: ", Comic.Title)
+		// fmt.Println("Comic url: ", Comic.Img)
+		// fmt.Println("Alt text: ", Comic.Alt)
 
 		safeTitle := strings.ReplaceAll(Comic.Title, " ", "_")
+
+		invalidChars := []string{"/", "\\", ":", "*", "?", "\"", "<", ">", "|"}
+		//looping through the safeTitle and removing all illegal characters for file names
+		for _, c := range invalidChars {
+			safeTitle = strings.ReplaceAll(safeTitle, c, "")
+		}
 
 		//dynamically creates file name for individual comic
 		filename := fmt.Sprintf("%s/%d-%s.png", folder, Comic.Num, safeTitle)
@@ -62,8 +65,9 @@ func main() {
 			fmt.Println("Error downloading Comic: ", err)
 			return
 		}
-		fmt.Println("Comic saved Successfully: ", filename)
+		//fmt.Println("Comic saved Successfully: ", filename)
 	}
+	fmt.Println("All comics downloaded successfully")
 }
 
 // collection of related data grouped together
@@ -77,13 +81,16 @@ type Comic struct {
 func getComic(num int) (*Comic, error) {
 	url := fmt.Sprintf("https://xkcd.com/%d/info.0.json", num) //dynamically storing the string for comic
 	resp, err := http.Get(url)
-
 	//checks for error
 	if err != nil {
 		return nil, err
 	}
 
 	defer resp.Body.Close() //closes http response body when the function is done
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("recieved status %d", resp.StatusCode)
+	}
 
 	var comic Comic //declaring variable to store parsed JSON data
 
@@ -110,4 +117,21 @@ func downloadImage(url, filename string) error {
 		return err
 	}
 	return nil
+}
+
+func getLastComicNum() (int, error) {
+	resp, err := http.Get("https://xkcd.com/info.0.json")
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close() //clean up network connection
+
+	var latest Comic
+
+	err = json.NewDecoder(resp.Body).Decode(&latest) // parse json into struct
+	if err != nil {
+		return 0, err
+	}
+
+	return latest.Num, nil //send comic number back
 }
