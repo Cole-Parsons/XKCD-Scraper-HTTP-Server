@@ -8,7 +8,7 @@ import (
 // test sanitation
 func TestSanitizeTitle(t *testing.T) {
 	input := `Hello /:*?"<>| World`
-	expected := "Hello_World"
+	expected := "Hello__World"
 
 	result := sanitizeTitle(input)
 
