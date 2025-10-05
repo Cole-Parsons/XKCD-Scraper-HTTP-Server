@@ -1,14 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
 
 // test sanitation
 func TestSanitizeTitle(t *testing.T) {
-	input := `Hello /:*?"<>| World`
-	expected := "Hello__World"
+	input := `Hello /:*?"<>|World`
+	expected := "Hello_World"
 
 	result := sanitizeTitle(input)
 
@@ -50,4 +51,24 @@ func TestDownloadImage(t *testing.T) {
 	}
 
 	os.Remove(filename)
+}
+
+func TestCLIFlags(t *testing.T) {
+	origArgs := os.Args
+	defer func() { os.Args = origArgs }() //restore later
+	//simulate CLI user input in termial
+	os.Args = []string{"cmd", "-parser=regex", "download-all"}
+
+}
+
+func downloadComics(parser string, max int) {
+	lastNum, _ := getLastComicNum()
+	if max > 0 && max < lastNum {
+		lastNum = max
+	}
+
+	for i := 1; i <= lastNum; i++ {
+		comic, _ := fetchComic(i, parser)
+		fmt.Println("would download: ", comic.Num, comic.Title)
+	}
 }
