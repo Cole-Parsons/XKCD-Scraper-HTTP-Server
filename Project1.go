@@ -7,7 +7,8 @@ import (
 	"io"            // reading and writing streams of data
 	"net/http"      //make http requests
 	"net/url"
-	"os"      //to interact with file system
+	"os" //to interact with file system
+	"regexp"
 	"strings" //for string manipulation
 
 	"golang.org/x/net/html" // html parse
@@ -15,9 +16,9 @@ import (
 
 func main() {
 
-	versionFlag := flag.Bool("version", false, "Print program version")
-	parserFlag("parser", json, " Choose parsing method, html or regex")
-	downloadAllFlag := ("download-all", false, "download all the comics including ones already downloaded")
+	versionFlag := flag.Bool("version" ,false, "Print program version")
+	parserFlag := flag.String("parser" ,json, " Choose parsing method, html or regex")
+	downloadAllFlag := flag.Bool("download-all", false, "download all the comics including ones already downloaded")
 	flag.Parse()
 
 	if *versionFlag{
@@ -52,7 +53,7 @@ func main() {
 
 	for i := 1; i <= lastNum; i++ {
 
-		Comic, err := getComic(i) //calls get comic ; gets comic JSON
+		Comic, err := fetchComic(i, *parserFlag)
 		if err != nil {
 			fmt.Println("Skipping comic ", i, ":", err)
 			continue
@@ -166,11 +167,12 @@ func sanitizeTitle(title string) string {
 	return safeTitle
 }
 
+//recursive html
 func getComicHTML (num int) (*Comic, error) {
-	url := Sprintf("https://xkcd.com/%d/", num)
+	url := fmt.Sprintf("https://xkcd.com/%d/", num)
 	resp, err := http.Get(url)
 	if err != nil{
-		return err, nil
+		return nil, err
 	}
 
 	defer resp.Body.Close()
@@ -181,16 +183,18 @@ func getComicHTML (num int) (*Comic, error) {
 		return nil, err
 	}
 	var comicImg, altText, titleText string
-	
-	var traverse func(*html.node)
-	traverse = func(n * html.node) {
-		if n.Type == html.Elementnode && n.Data == "div" {
+	//recursive function to traverse HTML nodes
+	//looking for div#comic
+	var traverse func(*html.Node)
+	traverse = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "div" {
 			for _, attr := n.Attr{
 				if attr.Key == "id" && attr.Val == "comic" {
+					//found div#comic, now looking for img tag
 					for c := n.FirstChild; c != nil; c = c.NextSibling{
-						if c.Type == html.ElementNode && c.Fata == "img" {
+						if c.Type == html.ElementNode && c.Data == "img" {
 							for _, imgAttr := range c.Attr {
-								if imgAttr.Key == "scr" {
+								if imgAttr.Key == "src" {
 									comicImg = "https:" + imgAttr.Val
 								}
 								if imgAttr.Key == "title" {
@@ -199,25 +203,79 @@ func getComicHTML (num int) (*Comic, error) {
 								if imgAttr.Key == "alt" {
 									titleText = imgAttr.Val
 								}
-								for c := nFirstChild; c != nil; c = c.NextSibling {
+								for c := n.FirstChild; c != nil; c = c.NextSibling {
 									traverse(c)
 								}
-								traverse(doc)
 								if comicImg == "" {
 									return nil, fmt.Errorf("comic not found")
 								}
-
-								return &comic {
-									Num: num,
-									Title: titleText,
-									Img: comicImg,
-									Alt: altText,
-								}, nil
 							}
 						}
 					}
 				}
 			}
 		}
+
+		//recurse into child nodes
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			traverse(c)
+		}
+	}
+
+	traverse(doc) //start recussion from root
+
+	if comicImg == "" {
+		return nil, fmt.Errorf("comic not found")
+	}
+
+	return &Comic{
+		Num: num,
+		Title: titleText,
+		Img: comicImg,
+		Alt: altText,
+	}, nil
+}
+
+//regex html
+func getComicRegex (num int) (*Comic, error) {
+	resp, err := http.Get(fmt.Sprintf("https://xkcd.com/%d/", num))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	htmlContent := string(bodyBytes)
+
+	//applying regex
+	re := regexp.MustCompile(`<div id="comic">.*?<img src="(.*?)".*?title="(.*?)".*?alt="(.*?)".*?>`)
+	matches := re.FindStringSubmatch(htmlContent)
+
+	if len(matches) < 4 {
+		return nil, fmt.Errorf("comic not found")
+	}
+
+	return &Comic {
+		Num: num, 
+		Title: matches[3], //alt
+		Img: "https:" + matches[1],
+		Alt: matches[2], //title
+	}, nil
+}
+
+//decides what method to use
+func fetchComic(num int, parser string) (*Comic, error) {
+	switch parser {
+    case "", "json":
+        return getComic(num)
+    case "html":
+        return getComicHTML(num)
+    case "regex":
+        return getComicRegex(num)
+    default:
+        return nil, fmt.Errorf("invalid parser type: %s", parser)
 	}
 }
