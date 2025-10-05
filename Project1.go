@@ -2,17 +2,41 @@ package main
 
 import (
 	"encoding/json" //parse JSON data
+	"flag"          // for cli inputs
 	"fmt"           //print messages to console
 	"io"            // reading and writing streams of data
 	"net/http"      //make http requests
-	"os"            //to interact with file system
-	"strings"       //for string manipulation
+	"net/url"
+	"os"      //to interact with file system
+	"strings" //for string manipulation
+
+	"golang.org/x/net/html" // html parse
 )
 
 func main() {
 
+	versionFlag := flag.Bool("version", false, "Print program version")
+	parserFlag("parser", json, " Choose parsing method, html or regex")
+	downloadAllFlag := ("download-all", false, "download all the comics including ones already downloaded")
+	flag.Parse()
+
+	if *versionFlag{
+		fmt.Println("Comic downloader v2.0")
+		return
+	}
+	
+	fmt.Println("Parser Method: ", *parserFlag)
+
+	if *downloadAllFlag {
+		fmt.Println("Downloading all comics even if they exist")
+	}else {
+		fmt.Println("Stopping when comic is already downloaded")
+	}
+
+
 	folder := "comics"
-	fmt.Println("Downloading all comic .pngs up to the most recent")
+	fmt.Println("Downloading all comic .pngs up to the most recent") 
+
 
 	err := os.MkdirAll(folder, os.ModePerm) //creates new folder for comics
 	if err != nil {
@@ -47,6 +71,10 @@ func main() {
 		//checks if file already exists
 		if _, err := os.Stat(filename); err == nil {
 			fmt.Println("File already exists, skipping: ", filename)
+			if !*downloadAllFlag {
+				fmt.Println("Stopping because download-all not set")
+				break
+			}
 			continue
 		}
 
@@ -136,4 +164,60 @@ func sanitizeTitle(title string) string {
 		safeTitle = strings.ReplaceAll(safeTitle, c, "")
 	}
 	return safeTitle
+}
+
+func getComicHTML (num int) (*Comic, error) {
+	url := Sprintf("https://xkcd.com/%d/", num)
+	resp, err := http.Get(url)
+	if err != nil{
+		return err, nil
+	}
+
+	defer resp.Body.Close()
+	
+	//Parse HTML
+	doc, err := html.Parse(resp.Body)
+	if err != nil{
+		return nil, err
+	}
+	var comicImg, altText, titleText string
+	
+	var traverse func(*html.node)
+	traverse = func(n * html.node) {
+		if n.Type == html.Elementnode && n.Data == "div" {
+			for _, attr := n.Attr{
+				if attr.Key == "id" && attr.Val == "comic" {
+					for c := n.FirstChild; c != nil; c = c.NextSibling{
+						if c.Type == html.ElementNode && c.Fata == "img" {
+							for _, imgAttr := range c.Attr {
+								if imgAttr.Key == "scr" {
+									comicImg = "https:" + imgAttr.Val
+								}
+								if imgAttr.Key == "title" {
+									altText = imgAttr.Val
+								}
+								if imgAttr.Key == "alt" {
+									titleText = imgAttr.Val
+								}
+								for c := nFirstChild; c != nil; c = c.NextSibling {
+									traverse(c)
+								}
+								traverse(doc)
+								if comicImg == "" {
+									return nil, fmt.Errorf("comic not found")
+								}
+
+								return &comic {
+									Num: num,
+									Title: titleText,
+									Img: comicImg,
+									Alt: altText,
+								}, nil
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
