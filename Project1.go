@@ -16,7 +16,7 @@ import (
 func main() {
 
 	versionFlag := flag.Bool("version", false, "Print program version")
-	parserFlag := flag.String("parser", "json", " Choose parsing method, html or regex")
+	parserFlag := flag.String("parser", "json", "Choose parsing method, html or regex")
 	downloadAllFlag := flag.Bool("download-all", false, "download all the comics including ones already downloaded")
 	flag.Parse()
 
@@ -25,7 +25,7 @@ func main() {
 		return
 	}
 
-	fmt.Println("Parser Method: ", *parserFlag)
+	fmt.Println("Parser Method:", *parserFlag)
 
 	if *downloadAllFlag {
 		fmt.Println("Downloading all comics even if they exist")
@@ -34,7 +34,6 @@ func main() {
 	}
 
 	folder := "comics"
-	fmt.Println("Downloading all comic .pngs up to the most recent")
 
 	err := os.MkdirAll(folder, os.ModePerm) //creates new folder for comics
 	if err != nil {
@@ -68,12 +67,13 @@ func main() {
 
 		//checks if file already exists
 		if _, err := os.Stat(filename); err == nil {
-			fmt.Println("File already exists, skipping: ", filename)
 			if !*downloadAllFlag {
-				fmt.Println("Stopping because download-all not set")
+				fmt.Println("File already Exists:", filename)
+				fmt.Printf("Ending downloader because comic %s is already downloaded\n", filename)
 				break
+			} else {
+				//fmt.Printf("%s exists, but download-all is set, redownloading", filename)
 			}
-			continue
 		}
 
 		//downloads comic to disk using dynamic file name
@@ -86,7 +86,7 @@ func main() {
 		}
 		//fmt.Println("Comic saved Successfully: ", filename)
 	}
-	fmt.Println("All comics downloaded successfully")
+	fmt.Println("Program finished running")
 }
 
 // collection of related data grouped together
@@ -239,12 +239,17 @@ func getComicRegex(num int) (*Comic, error) {
 	htmlContent := string(bodyBytes)
 
 	//applying regex
-	re := regexp.MustCompile(`<div id="comic">.*?<img src="(.*?)".*?title="(.*?)".*?alt="(.*?)".*?>`)
+	re := regexp.MustCompile(`(?s)<div id="comic">.*?(?:<a [^>]*>)?<img[^>]*src="(//[^"]+)"[^>]*title="(.*?)"[^>]*alt="(.*?)"`)
 	matches := re.FindStringSubmatch(htmlContent)
 
 	if len(matches) < 4 {
-		return nil, fmt.Errorf("comic not found")
+		return nil, fmt.Errorf("comic not found: %v", matches)
 	}
+
+	// fmt.Println("DEBUG: Fetched comic page for", num)
+	// for i, m := range matches {
+	// 	fmt.Printf("Match[%d]: %q\n", i, m)
+	// }
 
 	return &Comic{
 		Num:   num,
