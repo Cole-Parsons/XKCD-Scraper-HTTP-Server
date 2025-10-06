@@ -1,1 +1,9 @@
 *.png
+
+comics/
+.vscode/
+.DS_Store
+*.exe
+*.out
+*.test
+
