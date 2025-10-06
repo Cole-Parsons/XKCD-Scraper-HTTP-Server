@@ -6,4 +6,6 @@ comics/
 *.exe
 *.out
 *.test
+*.DS_Store
+.gitattributes
 
