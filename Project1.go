@@ -1,13 +1,3 @@
-/*
-multi threading to do -
-defer wg.Done() - end after routines are done
-_add new flag to keep track of thread input (3 default)
-_create wait group (counter)
-_loop through number of threads and add to counter for each thread
-_wg.Wait() at the end, blocks pauses before all routines are done
-
-*/
-
 package main
 
 import (
@@ -20,11 +10,11 @@ import (
 	"regexp"
 	"strings" //for string manipulation
 
-	// "sync"			//Routine coordination
-	// "sync/atomic"	//safe atomic counters
-	// "runtime" 		//inspect/manage Routines
-	// "log"			//thread safe logging
-	// "context"		//cancel or timeout routines
+	"sync"			//Routine coordination
+	"sync/atomic"	//safe atomic counters
+	"runtime" 		//inspect/manage Routines
+	"log"			//thread safe logging
+	"context"		//cancel or timeout routines
 	"golang.org/x/net/html" // html parses
 )
 
@@ -63,45 +53,47 @@ func main() {
 		return
 	}
 
-	for i := 1; i <= lastNum; i++ {
+	var wg sync.WaitGroup //sets up thread counter
+	comicChan := make(chan int)
 
-		Comic, err := fetchComic(i, *parserFlag)
-		if err != nil {
-			fmt.Println("Skipping comic ", i, ":", err)
-			continue
-		}
-
-		//prints all info about the comic
-		// fmt.Println("Comic #: ", Comic.Num)
-		// fmt.Println("Comic Title: ", Comic.Title)
-		// fmt.Println("Comic url: ", Comic.Img)
-		// fmt.Println("Alt text: ", Comic.Alt)
-
-		//dynamically creates file name for individual comic
-		safeTitle := sanitizeTitle(Comic.Title)
-		filename := fmt.Sprintf("%s/%d-%s.png", folder, Comic.Num, safeTitle)
-
-		//checks if file already exists
-		if _, err := os.Stat(filename); err == nil {
-			if !*downloadAllFlag {
-				fmt.Println("File already Exists:", filename)
-				fmt.Printf("Ending downloader because comic %s is already downloaded\n", filename)
-				break
-			} else {
-				//fmt.Printf("%s exists, but download-all is set, redownloading", filename)
+	for t := 0; t < *threadsFlag; t++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range comicChan {
+				Comic, err := fetchComic(i, *parserFlag)
+				if err != nil {
+					fmt.Println("Skipping comic", i, ":", err)
+					continue
+				}
+				safeTitle := sanitizeTitle(Comic.Title)
+				filename := fmt.Sprintf("%s/%d-%s.png", folder, Comic.Num, safeTitle)
+				
+				//checks if file already exists
+				if _, err := os.Stat(filename); err == nil {
+					if !*downloadAllFlag {
+						fmt.Println("File already Exists:", filename)
+						fmt.Printf("Ending downloader because comic %s is already downloaded\n", filename)
+					close(comicChan)
+					return
+					}
+				}
+			
+			err = downloadImage(Comic.Img, filename)
+			if err != nil {
+				fmt.Println("Error downloading Comic: ", err)
+				continue
 			}
+			fmt.Println("Saved: ", filename)	
 		}
-
-		//downloads comic to disk using dynamic file name
-		err = downloadImage(Comic.Img, filename)
-
-		//confirms if image saved correctly
-		if err != nil {
-			fmt.Println("Error downloading Comic: ", err)
-			return
-		}
-		//fmt.Println("Comic saved Successfully: ", filename)
 	}
+	//send all comic numbers to workers
+	for i := 1; i <= lastNum; i++ {
+		comicChan <- i
+	}
+	close(comicChan) //no more work
+
+	wg.Wait()
 	fmt.Println("Program finished running")
 }
 
