@@ -10,11 +10,12 @@ import (
 	"regexp"
 	"strings" //for string manipulation
 
-	"sync"			//Routine coordination
-	"sync/atomic"	//safe atomic counters
-	"runtime" 		//inspect/manage Routines
-	"log"			//thread safe logging
-	"context"		//cancel or timeout routines
+	"sync" //Routine coordination
+	//safe atomic counters
+	//inspect/manage Routines
+	//thread safe logging
+	//cancel or timeout routines
+
 	"golang.org/x/net/html" // html parses
 )
 
@@ -68,26 +69,26 @@ func main() {
 				}
 				safeTitle := sanitizeTitle(Comic.Title)
 				filename := fmt.Sprintf("%s/%d-%s.png", folder, Comic.Num, safeTitle)
-				
-				//checks if file already exists
+
 				if _, err := os.Stat(filename); err == nil {
 					if !*downloadAllFlag {
 						fmt.Println("File already Exists:", filename)
 						fmt.Printf("Ending downloader because comic %s is already downloaded\n", filename)
-					close(comicChan)
-					return
+						close(comicChan)
+						return
 					}
 				}
-			
-			err = downloadImage(Comic.Img, filename)
-			if err != nil {
-				fmt.Println("Error downloading Comic: ", err)
-				continue
+
+				err = downloadImage(Comic.Img, filename)
+				if err != nil {
+					fmt.Println("Error downloading Comic: ", err)
+					continue
+				}
+				fmt.Println("Saved: ", filename)
 			}
-			fmt.Println("Saved: ", filename)	
-		}
+		}()
 	}
-	//send all comic numbers to workers
+
 	for i := 1; i <= lastNum; i++ {
 		comicChan <- i
 	}
