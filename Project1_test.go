@@ -72,3 +72,4 @@ func downloadComics(parser string, max int) {
 		fmt.Println("would download: ", comic.Num, comic.Title)
 	}
 }
+

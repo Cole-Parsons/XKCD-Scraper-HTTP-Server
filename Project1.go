@@ -1,3 +1,13 @@
+/*
+multi threading to do -
+defer wg.Done() - end after routines are done
+_add new flag to keep track of thread input (3 default)
+_create wait group (counter)
+_loop through number of threads and add to counter for each thread
+_wg.Wait() at the end, blocks pauses before all routines are done
+
+*/
+
 package main
 
 import (
@@ -10,7 +20,12 @@ import (
 	"regexp"
 	"strings" //for string manipulation
 
-	"golang.org/x/net/html" // html parse
+	// "sync"			//Routine coordination
+	// "sync/atomic"	//safe atomic counters
+	// "runtime" 		//inspect/manage Routines
+	// "log"			//thread safe logging
+	// "context"		//cancel or timeout routines
+	"golang.org/x/net/html" // html parses
 )
 
 func main() {
@@ -18,6 +33,7 @@ func main() {
 	versionFlag := flag.Bool("version", false, "Print program version")
 	parserFlag := flag.String("parser", "json", "Choose parsing method, html or regex")
 	downloadAllFlag := flag.Bool("download-all", false, "download all the comics including ones already downloaded")
+	threadsFlag := flag.Int("threads", 3, "choose how many goroutines for the run")
 	flag.Parse()
 
 	if *versionFlag {
