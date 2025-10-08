@@ -74,7 +74,6 @@ func main() {
 					if !*downloadAllFlag {
 						fmt.Println("File already Exists:", filename)
 						fmt.Printf("Ending downloader because comic %s is already downloaded\n", filename)
-						close(comicChan)
 						return
 					}
 				}
