@@ -28,7 +28,7 @@ func main() {
 	flag.Parse()
 
 	if *versionFlag {
-		fmt.Println("Comic downloader v2.0")
+		fmt.Println("Comic downloader v3.0")
 		return
 	}
 
