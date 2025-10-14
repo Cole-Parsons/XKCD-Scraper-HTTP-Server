@@ -9,7 +9,8 @@ import (
 	"os"            //to interact with file system
 	"regexp"
 	"strings" //for string manipulation
-
+	"strconv" //converts between strings and numbers
+	"path/filepath" //builds safe file paths across operating systems
 	"sync" //Routine coordination
 	//safe atomic counters
 	//inspect/manage Routines
@@ -20,6 +21,73 @@ import (
 )
 
 func main() {
+
+	var (
+		downloading = make(map[int]bool)
+		downloaded = make(map[int]bool)
+		mu sync.Mutex
+	)
+
+	func handleGetComic(w http.ResponseWriter, r *http.Request) {
+		idStr := strings.TrimPrefix(r.URL.Path, "/comic/")
+
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			http.Error(w, "invalid comic number", http.StatusBadRequest)
+			return
+		}
+		mu.Lock()			//locks access to shared maps to avoid concurrent modification
+		defer mu.Unlock()	//locks access to shared maps to avoid concurrent modification
+
+		status := map[string]bool {
+		"downloaded": downloaded[id],
+		"isDownloading": donwloading[id],
+		}
+		json.NewEncoder(w).Encode(status)
+	}
+
+	func handlePostComic(w http.ResponseWriter, r *http.Request) {
+		idStr := strings.TrimPrefix(r.URL.Path, "/comic/")
+		id, err := strconv.Atoi(idStr)
+
+		mu.Lock()
+		if downloading[id] {
+			mu.Unlock()
+			http.Error(w, "comic is already downloading", http.StatusConflict)
+			return
+		}
+		downloading[id] = true
+		mu.Unlock()
+
+		go func() { 
+			defer func() {
+				mu.Lock()
+				downloading[id] = false
+				downloaded[id] = true
+				mu.Unlock()
+			}()
+			comic, err := fetchComic(id, "json")
+			if err != nil {
+				fmt.Println("Error  downloading comic:", err)
+				return
+			}
+			safeTitle := sanitizeTitle(Comic.Title)
+			filename := filepath.Join("comics", fmt.Sprintf("%d-%s.png", comic.Num, safeTitle))
+
+			if err := downloadImage(comic.Img, filename); err != nil {
+				fmt.Println("Download failed:", err)
+			} else {
+				fmt.Println("Saved:", filename)
+			}
+		}()
+		w.WriteHeader(http.StatusAccpeted)
+		w.Write([]byte("Download Started"))
+	}
+
+	
+
+
+
 
 	versionFlag := flag.Bool("version", false, "Print program version")
 	parserFlag := flag.String("parser", "json", "Choose parsing method, html or regex")
