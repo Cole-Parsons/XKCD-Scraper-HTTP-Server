@@ -7,92 +7,111 @@ import (
 	"io"            // reading and writing streams of data
 	"net/http"      //make http requests
 	"os"            //to interact with file system
-	"regexp"
-	"strings" //for string manipulation
-	"strconv" //converts between strings and numbers
 	"path/filepath" //builds safe file paths across operating systems
-	"sync" //Routine coordination
-	//safe atomic counters
-	//inspect/manage Routines
-	//thread safe logging
-	//cancel or timeout routines
+	"regexp"
+	"strconv" //converts between strings and numbers
+	"strings" //for string manipulation
+	"sync"    //Routine coordination
 
-	"golang.org/x/net/html" // html parses
+	"golang.org/x/net/html" // html parser
 )
 
-func main() {
+// Global maps and lock for server state
+var (
+	downloading = make(map[int]bool)
+	downloaded  = make(map[int]bool)
+	mu          sync.Mutex
+)
 
-	var (
-		downloading = make(map[int]bool)
-		downloaded = make(map[int]bool)
-		mu sync.Mutex
-	)
+//REST Handlers
 
-	func handleGetComic(w http.ResponseWriter, r *http.Request) {
-		idStr := strings.TrimPrefix(r.URL.Path, "/comic/")
+func handleGetComic(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/comic/")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "invalid comic number", http.StatusBadRequest)
+		return
+	}
+	mu.Lock()
+	defer mu.Unlock()
 
-		id, err := strconv.Atoi(idStr)
-		if err != nil {
-			http.Error(w, "invalid comic number", http.StatusBadRequest)
-			return
-		}
-		mu.Lock()			//locks access to shared maps to avoid concurrent modification
-		defer mu.Unlock()	//locks access to shared maps to avoid concurrent modification
+	status := map[string]bool{
+		"downloaded":    downloaded[id],
+		"isDownloading": downloading[id],
+	}
+	json.NewEncoder(w).Encode(status)
+}
 
-		status := map[string]bool {
-		"downloaded": downloaded[id],
-		"isDownloading": donwloading[id],
-		}
-		json.NewEncoder(w).Encode(status)
+func handlePostComic(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/comic/")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "invalid comic number", http.StatusBadRequest)
+		return
 	}
 
-	func handlePostComic(w http.ResponseWriter, r *http.Request) {
-		idStr := strings.TrimPrefix(r.URL.Path, "/comic/")
-		id, err := strconv.Atoi(idStr)
-
-		mu.Lock()
-		if downloading[id] {
-			mu.Unlock()
-			http.Error(w, "comic is already downloading", http.StatusConflict)
-			return
-		}
-		downloading[id] = true
+	mu.Lock()
+	if downloading[id] {
 		mu.Unlock()
+		http.Error(w, "comic is already downloading", http.StatusConflict)
+		return
+	}
+	downloading[id] = true
+	mu.Unlock()
 
-		go func() { 
-			defer func() {
-				mu.Lock()
-				downloading[id] = false
-				downloaded[id] = true
-				mu.Unlock()
-			}()
-			comic, err := fetchComic(id, "json")
-			if err != nil {
-				fmt.Println("Error  downloading comic:", err)
-				return
-			}
-			safeTitle := sanitizeTitle(Comic.Title)
-			filename := filepath.Join("comics", fmt.Sprintf("%d-%s.png", comic.Num, safeTitle))
-
-			if err := downloadImage(comic.Img, filename); err != nil {
-				fmt.Println("Download failed:", err)
-			} else {
-				fmt.Println("Saved:", filename)
-			}
+	go func() {
+		defer func() {
+			mu.Lock()
+			downloading[id] = false
+			downloaded[id] = true
+			mu.Unlock()
 		}()
-		w.WriteHeader(http.StatusAccpeted)
-		w.Write([]byte("Download Started"))
+
+		comic, err := fetchComic(id, "json")
+		if err != nil {
+			fmt.Println("Error downloading comic:", err)
+			return
+		}
+
+		safeTitle := sanitizeTitle(comic.Title)
+		filename := filepath.Join("comics", fmt.Sprintf("%d-%s.png", comic.Num, safeTitle))
+
+		if err := downloadImage(comic.Img, filename); err != nil {
+			fmt.Println("Download failed:", err)
+		} else {
+			fmt.Println("Saved:", filename)
+		}
+	}()
+
+	w.WriteHeader(http.StatusAccepted)
+	w.Write([]byte("Download Started"))
+}
+
+func handleDownload(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/download/")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "invalid comic number", http.StatusBadRequest)
+		return
 	}
 
-	
+	files, _ := os.ReadDir("comics")
+	for _, f := range files {
+		if strings.HasPrefix(f.Name(), fmt.Sprintf("%d-", id)) {
+			http.ServeFile(w, r, filepath.Join("comics", f.Name()))
+			return
+		}
+	}
+	http.NotFound(w, r)
+}
 
-
-
-
+// Main Program
+func main() {
 	versionFlag := flag.Bool("version", false, "Print program version")
 	parserFlag := flag.String("parser", "json", "Choose parsing method, html or regex")
 	downloadAllFlag := flag.Bool("download-all", false, "download all the comics including ones already downloaded")
 	threadsFlag := flag.Int("threads", 3, "choose how many goroutines for the run")
+	serverFlag := flag.Bool("server", false, "Run as HTTP server")
 	flag.Parse()
 
 	if *versionFlag {
@@ -109,10 +128,27 @@ func main() {
 	}
 
 	folder := "comics"
-
-	err := os.MkdirAll(folder, os.ModePerm) //creates new folder for comics
+	err := os.MkdirAll(folder, os.ModePerm)
 	if err != nil {
 		fmt.Println("Error making folder")
+		return
+	}
+
+	// Start server mode
+	if *serverFlag {
+		http.HandleFunc("/comic/", func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				handleGetComic(w, r)
+			case http.MethodPost:
+				handlePostComic(w, r)
+			default:
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			}
+		})
+		http.HandleFunc("/download/", handleDownload)
+		fmt.Println("Server running on http://localhost:8080")
+		http.ListenAndServe(":8080", nil)
 		return
 	}
 
@@ -122,7 +158,7 @@ func main() {
 		return
 	}
 
-	var wg sync.WaitGroup //sets up thread counter
+	var wg sync.WaitGroup
 	comicChan := make(chan int)
 
 	for t := 0; t < *threadsFlag; t++ {
@@ -130,13 +166,13 @@ func main() {
 		go func() {
 			defer wg.Done()
 			for i := range comicChan {
-				Comic, err := fetchComic(i, *parserFlag)
+				comic, err := fetchComic(i, *parserFlag)
 				if err != nil {
 					fmt.Println("Skipping comic", i, ":", err)
 					continue
 				}
-				safeTitle := sanitizeTitle(Comic.Title)
-				filename := fmt.Sprintf("%s/%d-%s.png", folder, Comic.Num, safeTitle)
+				safeTitle := sanitizeTitle(comic.Title)
+				filename := fmt.Sprintf("%s/%d-%s.png", folder, comic.Num, safeTitle)
 
 				if _, err := os.Stat(filename); err == nil {
 					if !*downloadAllFlag {
@@ -146,7 +182,7 @@ func main() {
 					}
 				}
 
-				err = downloadImage(Comic.Img, filename)
+				err = downloadImage(comic.Img, filename)
 				if err != nil {
 					fmt.Println("Error downloading Comic: ", err)
 					continue
@@ -159,59 +195,54 @@ func main() {
 	for i := 1; i <= lastNum; i++ {
 		comicChan <- i
 	}
-	close(comicChan) //no more work
+	close(comicChan)
 
 	wg.Wait()
 	fmt.Println("Program finished running")
 }
 
-// collection of related data grouped together
+//Supporting Functions
+
 type Comic struct {
 	Num   int    `json:"num"`
 	Title string `json:"title"`
-	Img   string `json:"img"` //img url
+	Img   string `json:"img"`
 	Alt   string `json:"alt"`
 }
 
 func getComic(num int) (*Comic, error) {
-	url := fmt.Sprintf("https://xkcd.com/%d/info.0.json", num) //dynamically storing the string for comic
+	url := fmt.Sprintf("https://xkcd.com/%d/info.0.json", num)
 	resp, err := http.Get(url)
-	//checks for error
 	if err != nil {
 		return nil, err
 	}
-
-	defer resp.Body.Close() //closes http response body when the function is done
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("recieved status %d", resp.StatusCode)
+		return nil, fmt.Errorf("received status %d", resp.StatusCode)
 	}
 
-	var comic Comic //declaring variable to store parsed JSON data
-
-	err = json.NewDecoder(resp.Body).Decode(&comic) //reads JSON data from http, fills comic struct with that data, directly updating it through pointer
+	var comic Comic
+	err = json.NewDecoder(resp.Body).Decode(&comic)
 	if err != nil {
 		return nil, err
 	}
 	return &comic, nil
-} //end get Comic
+}
 
 func downloadImage(url, filename string) error {
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()          //closes http connection to prevent memory leak
-	file, err := os.Create(filename) //creates new file
+	defer resp.Body.Close()
+	file, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	_, err = io.Copy(file, resp.Body) //copies all data from resp.Body into file
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err = io.Copy(file, resp.Body)
+	return err
 }
 
 func getLastComicNum() (int, error) {
@@ -219,16 +250,14 @@ func getLastComicNum() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close() //clean up network connection
+	defer resp.Body.Close()
 
 	var latest Comic
-
-	err = json.NewDecoder(resp.Body).Decode(&latest) // parse json into struct
+	err = json.NewDecoder(resp.Body).Decode(&latest)
 	if err != nil {
 		return 0, err
 	}
-
-	return latest.Num, nil //send comic number back
+	return latest.Num, nil
 }
 
 func sanitizeTitle(title string) string {
@@ -240,7 +269,8 @@ func sanitizeTitle(title string) string {
 	return safeTitle
 }
 
-// recursive html
+//HTML + Regex Parsing
+
 func getComicHTML(num int) (*Comic, error) {
 	url := fmt.Sprintf("https://xkcd.com/%d/", num)
 	resp, err := http.Get(url)
@@ -255,7 +285,6 @@ func getComicHTML(num int) (*Comic, error) {
 	}
 
 	var comicImg, altText, titleText string
-
 	var traverse func(n *html.Node)
 	traverse = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "div" {
@@ -279,28 +308,18 @@ func getComicHTML(num int) (*Comic, error) {
 				}
 			}
 		}
-
-		// Recurse into child nodes
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			traverse(c)
 		}
 	}
-
 	traverse(doc)
 
 	if comicImg == "" {
 		return nil, fmt.Errorf("comic not found")
 	}
-
-	return &Comic{
-		Num:   num,
-		Title: titleText,
-		Img:   comicImg,
-		Alt:   altText,
-	}, nil
+	return &Comic{Num: num, Title: titleText, Img: comicImg, Alt: altText}, nil
 }
 
-// regex html
 func getComicRegex(num int) (*Comic, error) {
 	resp, err := http.Get(fmt.Sprintf("https://xkcd.com/%d/", num))
 	if err != nil {
@@ -314,28 +333,20 @@ func getComicRegex(num int) (*Comic, error) {
 	}
 	htmlContent := string(bodyBytes)
 
-	//applying regex
 	re := regexp.MustCompile(`(?s)<div id="comic">.*?(?:<a [^>]*>)?<img[^>]*src="(//[^"]+)"[^>]*title="(.*?)"[^>]*alt="(.*?)"`)
 	matches := re.FindStringSubmatch(htmlContent)
 
 	if len(matches) < 4 {
 		return nil, fmt.Errorf("comic not found: %v", matches)
 	}
-
-	// fmt.Println("DEBUG: Fetched comic page for", num)
-	// for i, m := range matches {
-	// 	fmt.Printf("Match[%d]: %q\n", i, m)
-	// }
-
 	return &Comic{
 		Num:   num,
-		Title: matches[3], //alt
+		Title: matches[3],
 		Img:   "https:" + matches[1],
-		Alt:   matches[2], //title
+		Alt:   matches[2],
 	}, nil
 }
 
-// decides what method to use
 func fetchComic(num int, parser string) (*Comic, error) {
 	switch parser {
 	case "", "json":
