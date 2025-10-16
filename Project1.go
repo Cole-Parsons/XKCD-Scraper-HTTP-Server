@@ -238,7 +238,6 @@ func initDownloadedMap() {
 		if err != nil {
 			continue
 		}
-
 		downloaded[id] = true
 		fmt.Println("comic exists: ", id)
 	}
