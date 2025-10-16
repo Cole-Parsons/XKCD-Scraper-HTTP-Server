@@ -23,5 +23,5 @@ A Golang-based HTTP server that scrapes XKCD comics, serves them via a REST API,
 
 1. Clone the repository:
    ```bash
-   git clone <repo-url>
+   git clone https://github.com/Surfs-Up5/XKCD-Scraper-HTTP-Server.git
    cd Project-1
