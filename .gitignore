@@ -1,5 +1,4 @@
 *.png
-
 comics/
 .vscode/
 .DS_Store
@@ -8,4 +7,6 @@ comics/
 *.test
 *.DS_Store
 .gitattributes
+
+node_modules
 

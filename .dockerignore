@@ -1,0 +1,14 @@
+
+*.exe
+*.png
+
+comics/
+
+*.swp
+*.DS_Store
+.vscode/
+
+.git
+.gitignore
+
+*_test.go
