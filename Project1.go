@@ -23,15 +23,20 @@ var (
 //REST Handlers
 
 func handleGetComic(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	w.Header().Set("Content-Type", "application/json")
+
 	idStr := strings.TrimPrefix(r.URL.Path, "/comic/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "invalid comic number", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error":"invalid comic number"}`))
 		return
 	}
+
 	mu.Lock()
 	defer mu.Unlock()
-
 	status := map[string]bool{
 		"downloaded":    downloaded[id],
 		"isDownloading": downloading[id],
@@ -40,17 +45,28 @@ func handleGetComic(w http.ResponseWriter, r *http.Request) {
 }
 
 func handlePostComic(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
 	idStr := strings.TrimPrefix(r.URL.Path, "/comic/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "invalid comic number", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error":"invalid comic number"}`))
 		return
 	}
 
 	mu.Lock()
 	if downloading[id] {
 		mu.Unlock()
-		http.Error(w, "comic is already downloading", http.StatusConflict)
+		w.WriteHeader(http.StatusConflict)
+		w.Write([]byte(`{"error":"comic is already downloading"}`))
 		return
 	}
 	downloading[id] = true
@@ -81,7 +97,7 @@ func handlePostComic(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	w.WriteHeader(http.StatusAccepted)
-	w.Write([]byte("Download Started"))
+	w.Write([]byte(`{"message":"Download Started"}`))
 }
 
 func handleDownload(w http.ResponseWriter, r *http.Request) {
@@ -100,6 +116,12 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	http.NotFound(w, r)
+}
+
+func enableCORS(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 }
 
 // Main Program
@@ -126,16 +148,41 @@ func main() {
 	// Start server mode
 	if *serverFlag {
 		http.HandleFunc("/comic/", func(w http.ResponseWriter, r *http.Request) {
+			enableCORS(w) // MUST be first
+
+			if r.Method == http.MethodOptions { // Preflight
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			idStr := strings.TrimPrefix(r.URL.Path, "/comic/")
+			_, err := strconv.Atoi(idStr)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(`{"error":"invalid comic number"}`))
+				return
+			}
+
 			switch r.Method {
 			case http.MethodGet:
 				handleGetComic(w, r)
 			case http.MethodPost:
 				handlePostComic(w, r)
 			default:
-				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				w.Write([]byte(`{"error":"method not allowed"}`))
 			}
 		})
-		http.HandleFunc("/download/", handleDownload)
+		http.HandleFunc("/download/", func(w http.ResponseWriter, r *http.Request) {
+			enableCORS(w)
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			handleDownload(w, r)
+		})
 		fmt.Println("Server running on http://localhost:8080")
 		http.ListenAndServe(":8080", nil)
 		return
