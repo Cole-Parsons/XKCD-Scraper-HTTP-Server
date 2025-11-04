@@ -1,28 +1,35 @@
-# XKCD Scraper HTTP Server
+# **XKCD Downloader & Server**
 
-A Golang-based HTTP server that scrapes XKCD comics, serves them via a REST API, and supports multi-threaded downloads using Goroutines.
+## Version 1-4 | Go Project
+A multi-version Go project that evolves from a simple comic downloader into a full REST API server for XKCD comics.
+This project demonstrates progressive software development in Go — including CLI design, unit testing, concurrency, and HTTP server implementation.
 
-## Features
+### Initial Downloader (v1)
+A Go program that downloads all comics from [XKCD](https://xkcd.com/)
+When rerun, it automatically skips comics that have already been downloaded — ensuring efficient updates.
 
-- Downloads XKCD comics and stores them locally.
-- REST API endpoints:
-  - `GET /comic/{id}` – Check if a comic is downloaded or currently downloading.
-  - `POST /comic/{id}` – Request a comic to be downloaded.
-  - `GET /download/{id}` – Download the comic image if available.
-- Multi-threaded downloads using Goroutines.
-- Supports CLI flags for version info and server mode.
+### CLI Interface (v2)
+Adds a full command-line interface (CLI) for better user control.
 
-## Requirements
+**CLI FLags**
+`--version`            Prints program version
+`--parser=regex/html`  Choose how to parse XKCD HTML pages (Default uses JSON)
+`--download-all`       Continue downloading all comics even if some are already downloaded
+(default behavior)     Uses JSON parsing, stops when an alread downloaded comic is found
 
-- Go 1.25+
-- Docker (optional, for containerization)
+### Multithreading (v3)
+Uses Goroutines to download multiple comics concurrently.
 
-## Setup & Run
+**New CLI FLag**
+`--threads=3`          Number of comics to download at once (default: 3)
 
-### Locally
+### XKCD Server (v4)
+Renamed to XKCD Server, this version turns the project into an HTTP-based REST API
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Surfs-Up5/XKCD-Scraper-HTTP-Server.git
-   cd Project-1
-   go run Project1.go
+**REST Endpoints**
+`GET`    `/comic/{id}`      Returns JSON about whether a comic is downloaded
+`POST`   `/comic/{id}`      Requests the server to download that comic
+`GET`    `/download/{id}`   Returns the comic file if it exists, else 404
+
+## Cross-Platform Support
+Test on Windows, MacOS, and Linux using Virtual Box
