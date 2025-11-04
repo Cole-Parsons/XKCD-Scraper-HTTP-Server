@@ -36,11 +36,46 @@ Uses Goroutines to download multiple comics concurrently.
 Renamed to XKCD Server, this version turns the project into an HTTP-based REST API  
 
 *REST Endpoints*
+```text
 `GET`    `/comic/{id}`      Returns JSON about whether a comic is downloaded  
 `POST`   `/comic/{id}`      Requests the server to download that comic  
 `GET`    `/download/{id}`   Returns the comic file if it exists, else 404  
+```
 
 ---
 
+## How to run
+
+### Clone Repository
+```bash
+git clone https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server.git
+cd XKCD-Downloader
+```
+
+## Run the Downloader (v1-v3)
+# Default run  
+`go run Project1.go`
+
+# Using CLI Flags
+`go run Project1.go --version`
+`go run Project1.go --parser=regex/html`
+`go run Project1.go --download-all`
+`go run Project1.go --threads=5`
+
+## Run the XKCD Server (v4)
+```bash
+go build -o xkcd_server Project1.go
+./xkcd_server -server
+```
+
+# Example server use
+```bash
+curl -X GET http://localhost:8080/comic/614
+curl -X POST http://localhost:8080/comic/614
+curl -O http://localhost:8080/download/614
+```
+
 ## Cross-Platform Support    
 Test on Windows, MacOS, and Linux using Virtual Box  
+
+
