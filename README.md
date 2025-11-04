@@ -44,7 +44,7 @@ Renamed to XKCD Server, this version turns the project into an HTTP-based REST A
 
 ---
 
-## How to run
+# How to run
 
 ### Clone Repository
 ```bash
@@ -53,10 +53,10 @@ cd XKCD-Downloader
 ```
 
 ## Run the Downloader (v1-v3)
-# Default run  
+### Default run  
 `go run Project1.go`
 
-# Using CLI Flags
+### Using CLI Flags
 `go run Project1.go --version`
 `go run Project1.go --parser=regex/html`
 `go run Project1.go --download-all`
@@ -68,7 +68,7 @@ go build -o xkcd_server Project1.go
 ./xkcd_server -server
 ```
 
-# Example server use
+### Example server use
 ```bash
 curl -X GET http://localhost:8080/comic/614
 curl -X POST http://localhost:8080/comic/614
