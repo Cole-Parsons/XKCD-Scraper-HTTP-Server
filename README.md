@@ -17,9 +17,9 @@ Adds a full command-line interface (CLI) for better user control.
 
 **CLI Flags:**  
 ```text
-`--version `           Prints program version  
-`--parser=regex/html`  Choose how to parse XKCD HTML pages (Default uses JSON)  
-`--download-all`       Continue downloading all comics even if some are already downloaded  
+--version            Prints program version  
+--parser=regex/html  Choose how to parse XKCD HTML pages (Default uses JSON)  
+--download-all       Continue downloading all comics even if some are already downloaded  
 (default behavior)     Uses JSON parsing, stops when an already downloaded comic is found
 ```
 ---
@@ -37,9 +37,9 @@ Renamed to XKCD Server, this version turns the project into an HTTP-based REST A
 
 *REST Endpoints*
 ```text
-`GET`    `/comic/{id}`      Returns JSON about whether a comic is downloaded  
-`POST`   `/comic/{id}`      Requests the server to download that comic  
-`GET`    `/download/{id}`   Returns the comic file if it exists, else 404  
+GET    /comic/{id}        Returns JSON about whether a comic is downloaded  
+POST   /comic/{id}        Requests the server to download that comic  
+GET    /download/{id}     Returns the comic file if it exists, else 404  
 ```
 
 ---
@@ -57,10 +57,10 @@ cd XKCD-Downloader
 `go run Project1.go`
 
 ### Using CLI Flags
-`go run Project1.go --version`
-`go run Project1.go --parser=regex/html`
-`go run Project1.go --download-all`
-`go run Project1.go --threads=5`
+`go run Project1.go --version`  
+`go run Project1.go --parser=regex/html`  
+`go run Project1.go --download-all`  
+`go run Project1.go --threads=5`  
 
 ## Run the XKCD Server (v4)
 ```bash
