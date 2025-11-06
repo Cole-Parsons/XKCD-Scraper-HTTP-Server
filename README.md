@@ -78,4 +78,12 @@ curl -O http://localhost:8080/download/614
 ## Cross-Platform Support    
 Test on Windows, MacOS, and Linux using Virtual Box  
 
+## Related Projects  
+[XKCD-Client](https://github.com/Cole-Parsons/XKCD-Client.git)  
+[XKCD-Frontend](https://github.com/Cole-Parsons/XKCD-frontend.git)  
+
+## To run the entirety of the Scraper see:  
+[Docker-compose](https://github.com/Cole-Parsons/XKCD-docker-compose.git)
+
+
 
