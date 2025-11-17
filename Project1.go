@@ -13,6 +13,8 @@ import (
 	"sync"          //Routine coordination
 )
 
+const ComicsDir = "/comics"
+
 // Global maps and lock for server state
 var (
 	downloading = make(map[int]bool)
@@ -87,7 +89,7 @@ func handlePostComic(w http.ResponseWriter, r *http.Request) {
 		}
 
 		safeTitle := sanitizeTitle(comic.Title)
-		filename := filepath.Join("comics", fmt.Sprintf("%d-%s.png", comic.Num, safeTitle))
+		filename := filepath.Join(ComicsDir, fmt.Sprintf("%d-%s.png", comic.Num, safeTitle))
 
 		if err := downloadImage(comic.Img, filename); err != nil {
 			fmt.Println("Download failed:", err)
@@ -108,10 +110,10 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	files, _ := os.ReadDir("comics")
+	files, _ := os.ReadDir(ComicsDir)
 	for _, f := range files {
 		if strings.HasPrefix(f.Name(), fmt.Sprintf("%d-", id)) {
-			http.ServeFile(w, r, filepath.Join("comics", f.Name()))
+		http.ServeFile(w, r, filepath.Join(ComicsDir, f.Name()))
 			return
 		}
 	}
@@ -135,14 +137,14 @@ func main() {
 		return
 	}
 
-	folder := "comics"
-	err := os.MkdirAll(folder, os.ModePerm)
+	err := os.MkdirAll(ComicsDir, os.ModePerm)
+
 	if err != nil {
 		fmt.Println("Error making folder")
 		return
 	}
 
-	os.MkdirAll("comics", os.ModePerm)
+	os.MkdirAll(ComicsDir, os.ModePerm)
 	initDownloadedMap() //populates download map with comics that exists in the folder
 
 	// Start server mode
@@ -268,7 +270,7 @@ func fetchComic(num int, parser string) (*Comic, error) {
 }
 
 func initDownloadedMap() {
-	files, _ := os.ReadDir("comics")
+	files, _ := os.ReadDir(ComicsDir)
 	for _, f := range files {
 		name := f.Name()
 
