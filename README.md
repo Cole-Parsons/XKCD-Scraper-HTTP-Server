@@ -1,6 +1,6 @@
 # *XKCD Downloader & Server*
 
-A Go-based XKCD Scraper that evolved from a simple downloader into a full-featured tool, featuring a command-line interface, multithreaded downloads, and an HTTP server with a REST API. Built incrementally, it demonstrates staged development, refactoring, and feature extension.
+A Go-based XKCD Scraper that evolved from a simple downloader into a full-featured tool, featuring a command-line interface, multithreaded downloads, and an HTTP server with a REST API. Built incrementally, it demonstrates staged development, refactoring, and feature extension. This Project is built around the [XKCD Comic](https://xkcd.com/) website.  
 
 ---
 
@@ -65,7 +65,7 @@ Adds a full command-line interface (CLI) for better user control.
 ---
 
 ### Initial Downloader (v1)  
-A Go program that downloads all comics from [XKCD](https://xkcd.com/).  
+A Go program that downloads all comics from XKCD.
 When rerun, it automatically skips comics that have already been downloaded — ensuring efficient updates.  
 
 ---
