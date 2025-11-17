@@ -4,10 +4,10 @@ A Go-based XKCD Scraper that evolved from a simple downloader into a full-featur
 
 ---
 
-## Server Precompiled Quick Run (Windows)  
+## Server Precompiled Quick Run 
 1. [Download build v4](https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server/blob/main/xkcd-server4.exe) (Other builds available at bottom of readme)  
 2. cd to where the build is located  
-3. Run `.\xkcd-server4.exe`  
+3. Run `.\xkcd-server4.exe --server`  
 
 ---
 
@@ -21,10 +21,17 @@ cd XKCD-Downloader
 ## Run and Build the XKCD Server  
 ```bash
 go build -o xkcd_server.exe
-.\xkcd_server.exe
+.\xkcd_server.exe --server
 ```
 
 ---
+
+# How to Use
+In Terminal-
+Check Status of a Comic: `Invoke-WebRequest -Uri http://localhost:8080/comic/123`  
+Request a Comic Download to Server: `Invoke-WebRequest -Uri http://localhost:8080/comic/123 -Method POST`  
+Download the Comic file from Server to Local: `Invoke-WebRequest -Uri http://localhost:8080/download/123 -OutFile 123.png`  
+- Change numbers for preferred comic  
 
 ## Version 1–4 | Go Project  
 A multi-version Go project that evolves from a simple comic downloader into a full REST API server for XKCD comics.  
@@ -37,7 +44,7 @@ This version turns the project into an HTTP-based REST API
 
 *REST Endpoints*
 ```text
-GET    /comic/{id}        Returns JSON about whether a comic is downloaded  
+GET    /comic/{id}        Returns JSON about whether a comic is downloaded/downloading  
 POST   /comic/{id}        Requests the server to download that comic  
 GET    /download/{id}     Returns the comic file if it exists, else 404  
 ```
