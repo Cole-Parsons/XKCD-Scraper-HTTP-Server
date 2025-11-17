@@ -1,5 +1,7 @@
 # *XKCD Downloader & Server*
 
+A Go-based XKCD Scraper that evolved from a simple downloader into a full-featured tool, featuring a command-line interface, multithreaded downloads, and an HTTP server with a REST API. Built incrementally, it demonstrates staged development, refactoring, and feature extension.
+
 ---
 
 ## Server Precompiled Quick Run (Windows)  
@@ -9,36 +11,20 @@
 
 ---
 
-# How to Build/Run From Source
+# How to Build/Run From Source  
 
-### Clone Repository
+### Clone Repository  
 ```bash
 git clone https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server.git
 cd XKCD-Downloader
 ```
-
-## Run the Downloader (v1-v3)
-### Default run  
-`go run Project1.go`
-
-### Using CLI Flags
-`go run Project1.go --version`  
-`go run Project1.go --parser=regex/html`  
-`go run Project1.go --download-all`  
-`go run Project1.go --threads=5`  
-
-## Run the XKCD Server (v4)
+## Run and Build the XKCD Server  
 ```bash
 go build -o xkcd_server.exe
 .\xkcd_server.exe
 ```
 
-### Example server use
-```bash
-curl -X GET http://localhost:8080/comic/614
-curl -X POST http://localhost:8080/comic/614
-curl -O http://localhost:8080/download/614
-```
+---
 
 ## Version 1–4 | Go Project  
 A multi-version Go project that evolves from a simple comic downloader into a full REST API server for XKCD comics.  
@@ -61,7 +47,7 @@ GET    /download/{id}     Returns the comic file if it exists, else 404
 ### Multithreading (v3)  
 Uses Goroutines to download multiple comics concurrently.  
 
-**New CLI FLag*  
+*CLI FLag*  
 `--threads=3`          Number of comics to download at once (default: 3) 
 
 ---
