@@ -4,7 +4,7 @@ A Go-based XKCD Scraper that evolved from a simple downloader into a full-featur
 
 ---
 
-## Server Precompiled Quick Run 
+# Server Precompiled Quick Run 
 1. [Download build v4](https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server/blob/main/xkcd-server4.exe) (Other builds available at bottom of readme)  
 2. cd to where the build is located  
 3. Run `.\xkcd-server4.exe --server`  
