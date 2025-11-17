@@ -1,5 +1,14 @@
 # *XKCD Downloader & Server*
 
+---
+
+## Server Quick Run (Windows)  
+1. [Download build](https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server/blob/main/xkcd-server4.exe)  
+2. cd to where the build is located  
+3. Run `.\xkcd-server4.exe`  
+
+---
+
 ## Version 1–4 | Go Project  
 A multi-version Go project that evolves from a simple comic downloader into a full REST API server for XKCD comics.  
 This project demonstrates progressive software development in Go — including CLI design, unit testing, concurrency, and HTTP server implementation.  
@@ -74,6 +83,12 @@ curl -X GET http://localhost:8080/comic/614
 curl -X POST http://localhost:8080/comic/614
 curl -O http://localhost:8080/download/614
 ```
+
+## Server Builds  
+[Version 4](https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server/blob/main/xkcd-server4.exe)  
+[Version 3](https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server/blob/main/xkcd-server3.exe)  
+[Version 2](https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server/blob/main/xkcd-server2.exe)  
+[Version 1](https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server/blob/main/xkcd-server1.exe)  
 
 ## Cross-Platform Support    
 Test on Windows, MacOS, and Linux using Virtual Box  
