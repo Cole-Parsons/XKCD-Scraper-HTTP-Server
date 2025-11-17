@@ -78,9 +78,9 @@ When rerun, it automatically skips comics that have already been downloaded — 
 
 ## Server Source
 [Version 4](https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server/blob/main/xkcd-server4.exe)  
-[Version 3](https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server/blob/54ddce8277f81a37309409cde733578b4c5b9094/Project1.go)
-[Version 2](https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server/blob/5ca8b19af337ff2714c8d6424c76857a2cb06869/Project1.go)
-[Version 1](https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server/blob/3ab881d18802de36a7789b4f456c0d5825c49ef4/Project1.go)
+[Version 3](https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server/blob/54ddce8277f81a37309409cde733578b4c5b9094/Project1.go)  
+[Version 2](https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server/blob/5ca8b19af337ff2714c8d6424c76857a2cb06869/Project1.go)  
+[Version 1](https://github.com/Cole-Parsons/XKCD-Scraper-HTTP-Server/blob/3ab881d18802de36a7789b4f456c0d5825c49ef4/Project1.go)  
 
 ## Cross-Platform Support    
 Test on Windows, MacOS, and Linux using Virtual Box  
